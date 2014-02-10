@@ -30,6 +30,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import cgi
+import re
 
 import spyne.const.xml_ns as ns
 
@@ -78,28 +79,44 @@ def _from_soap(in_envelope_xml, xmlids=None):
 
     return header, body
 
+
+def _sensible_xml_string(xml_string, charset):
+    """
+    This function helps to avoid the following lxml exception::
+
+        ValueError: Unicode strings with encoding declaration are not supported.
+
+    It is needed, because some clients define the charset via HTTP, some in
+    XML declaration and some do both. If we have an XML declaration, we use the
+    charset from that information. Otherwise, we use the HTTP header charset to
+    convert to unicode.
+    """
+    # Short cut: No charset in HTTP info, just pass the raw string.
+    raw_string = "".join(xml_string)
+    if charset is None:
+        return raw_string
+
+    # Let's look for an XML declaration.
+    xml_decl = re.match(r'<\?xml.*?\?>', raw_string)
+    if xml_decl:
+        match = re.match(r".*\sencoding=(?P<quote>['\"])(.*?)(?P=quote)", xml_decl.group())
+        if match:
+            # XML document has an encoding defined, let lxml deal with it.
+            return raw_string
+
+    # No encoding in XML: Use the HTTP encoding to create a unicode object
+    return raw_string.decode(charset)
+
+
 def _parse_xml_string(xml_string, charset=None,
                                   parser=etree.XMLParser(remove_comments=True)):
-    if charset:
-        string = ''.join([s.decode(charset) for s in xml_string])
-    else:
-        string = ''.join(xml_string)
+    string = _sensible_xml_string(xml_string, charset)
 
     try:
-        try:
-            root, xmlids = etree.XMLID(string, parser)
-
-        except XMLSyntaxError, e:
-            logger.error(string)
-            raise Fault('Client.XMLSyntaxError', str(e))
-
-    except ValueError, e:
-        logger.debug('%r -- falling back to str decoding.' % (e))
-        try:
-            root, xmlids = etree.XMLID(string.encode(charset), parser)
-        except XMLSyntaxError, e:
-            logger.error(string)
-            raise Fault('Client.XMLSyntaxError', str(e))
+        root, xmlids = etree.XMLID(string, parser)
+    except XMLSyntaxError, e:
+        logger.error(string)
+        raise Fault('Client.XMLSyntaxError', str(e))
 
     return root, xmlids
 

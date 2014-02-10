@@ -324,7 +324,6 @@ class XmlDocument(ProtocolBase):
     def __validate_lxml(self, payload):
         ret = self.validation_schema.validate(payload)
 
-        logger.debug("Validated ? %s" % str(ret))
         if ret == False:
             raise SchemaValidationError(
                                str(self.validation_schema.error_log.last_error))
