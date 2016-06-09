@@ -36,6 +36,7 @@ import spyne.const.xml_ns as ns
 
 from lxml import etree
 from lxml.etree import XMLSyntaxError
+from defusedxml.lxml import getDefaultParser as getDefusedParser, check_docinfo
 
 from spyne.const.http import HTTP_405
 from spyne.const.http import HTTP_500
@@ -108,12 +109,15 @@ def _sensible_xml_string(xml_string, charset):
     return raw_string.decode(charset)
 
 
-def _parse_xml_string(xml_string, charset=None,
-                                  parser=etree.XMLParser(remove_comments=True)):
+def _parse_xml_string(xml_string, charset=None, parser=None):
+    if parser is None:
+        parser = getDefusedParser()
+
     string = _sensible_xml_string(xml_string, charset)
 
     try:
         root, xmlids = etree.XMLID(string, parser)
+        check_docinfo(root.getroottree(), forbid_dtd=True, forbid_entities=True)
     except XMLSyntaxError, e:
         logger.error(string)
         raise Fault('Client.XMLSyntaxError', str(e))

@@ -26,6 +26,7 @@ logger = logging.getLogger('spyne.protocol.xml')
 
 from lxml import etree
 from lxml.etree import XMLSyntaxError
+from defusedxml.lxml import getDefaultParser as getDefusedParser, check_docinfo
 
 from spyne.util import _bytes_join
 
@@ -136,7 +137,7 @@ class XmlDocument(ProtocolBase):
         })
 
         self.log_messages = (logger.level == logging.DEBUG)
-        self.parser = etree.XMLParser(remove_comments=True)
+        self.parser = getDefusedParser()
 
 
     def set_validator(self, validator):
@@ -204,6 +205,7 @@ class XmlDocument(ProtocolBase):
                 logger.error(string)
                 raise Fault('Client.XMLSyntaxError', str(e))
 
+        check_docinfo(root.getroottree(), forbid_dtd=True, forbid_entities=True)
 
     def decompose_incoming_envelope(self, ctx, message):
         assert message in (self.REQUEST, self.RESPONSE)

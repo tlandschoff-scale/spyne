@@ -162,6 +162,7 @@ setup(
     install_requires=[
       'pytz',
       'lxml>=2.3',
+      'defusedxml>=0.3',
     ],
 
     entry_points = {
