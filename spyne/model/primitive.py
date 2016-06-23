@@ -47,7 +47,7 @@ try:
 except ImportError:
     pass
 
-string_encoding = 'utf8'
+string_encoding = 'UTF-8'
 
 FLOAT_PATTERN = '-?[0-9]+\.?[0-9]*'
 DATE_PATTERN = r'(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})'
