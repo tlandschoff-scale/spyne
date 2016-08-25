@@ -134,8 +134,6 @@ class Application(object):
                                                     'method_return_object', ctx)
 
         except Fault, e:
-            logger.exception(e)
-
             ctx.out_error = e
 
             # fire events
@@ -145,8 +143,6 @@ class Application(object):
                                                 'method_exception_object', ctx)
 
         except Exception, e:
-            logger.exception(e)
-
             ctx.out_error = Fault('Server', get_fault_string_from_exception(e))
 
             # fire events
